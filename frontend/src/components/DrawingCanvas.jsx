@@ -150,7 +150,7 @@ const DrawingCanvas = () => {
       });
       
       const formData = new FormData();
-      formData.append('image', blob);
+      formData.append('image', blob, 'equation.png'); // Add filename
 
       const response = await fetch('http://localhost:3001/api/solve', {
         method: 'POST',

@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
-const Tesseract = require('tesseract.js');
+const { createWorker } = require('tesseract.js');
 const math = require('mathjs');
 const nerdamer = require('nerdamer');
 require('nerdamer/all');
@@ -15,25 +15,18 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // Initialize Tesseract worker
-let worker = null;
-
 async function initializeWorker() {
-  try {
-    worker = await Tesseract.createWorker('eng', 1, {
-      logger: progress => {
-        console.log(progress);
-      }
-    });
-    console.log('Tesseract worker initialized successfully');
-    return worker;
-  } catch (error) {
-    console.error('Error initializing worker:', error);
-    throw error;
-  }
+  const worker = await createWorker({
+    logger: progress => console.log(progress)
+  });
+  // Load language data
+  await worker.loadLanguage('eng');
+  await worker.initialize('eng');
+  console.log('Tesseract worker initialized successfully');
+  return worker;
 }
 
-// Initialize the worker when server starts
-let workerReady = initializeWorker();
+let workerPromise = initializeWorker();
 
 // Function to determine if an equation is polynomial
 function isPolynomialEquation(eq) {
@@ -96,17 +89,19 @@ function solveArithmetic(eq) {
 // Enhanced endpoint to solve equations
 app.post('/api/solve', upload.single('image'), async (req, res) => {
   try {
-    // Ensure worker is initialized
-    const readyWorker = await workerReady;
-    if (!readyWorker) {
-      return res.status(500).json({ error: 'OCR worker not initialized' });
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file provided' });
     }
 
-    // Recognize text from image
+    const worker = await workerPromise;
     console.log('Starting OCR recognition...');
-    const { data: { text } } = await readyWorker.recognize(req.file.buffer);
-    console.log('Recognized text:', text);
     
+    // Convert buffer to Uint8Array
+    const imageData = new Uint8Array(req.file.buffer);
+    
+    const { data: { text } } = await worker.recognize(imageData);
+    console.log('Recognized text:', text);
+
     // Split into lines and process each equation
     const equations = text.split('\n')
       .map(line => line.trim())
@@ -156,7 +151,7 @@ app.get('/test', (req, res) => {
 // Add a health check endpoint
 app.get('/health', async (req, res) => {
   try {
-    const readyWorker = await workerReady;
+    const readyWorker = await workerPromise;
     res.json({ 
       status: 'healthy',
       workerInitialized: !!readyWorker
@@ -172,7 +167,7 @@ app.get('/health', async (req, res) => {
 // Cleanup on server shutdown
 process.on('SIGTERM', async () => {
   try {
-    const readyWorker = await workerReady;
+    const readyWorker = await workerPromise;
     if (readyWorker) {
       await readyWorker.terminate();
     }
