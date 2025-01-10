@@ -1,9 +1,10 @@
-// backend/server.js
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const Tesseract = require('tesseract.js');
 const math = require('mathjs');
+const nerdamer = require('nerdamer');
+require('nerdamer/all');
 
 const app = express();
 app.use(cors());
@@ -34,7 +35,65 @@ async function initializeWorker() {
 // Initialize the worker when server starts
 let workerReady = initializeWorker();
 
-// Endpoint to solve equations
+// Function to determine if an equation is polynomial
+function isPolynomialEquation(eq) {
+  // Remove spaces and convert to lowercase
+  const cleanEq = eq.replace(/\s/g, '').toLowerCase();
+  
+  // Check for presence of variables (x, y, z) and '^' operator
+  return /[xyz]/.test(cleanEq) && /=/.test(cleanEq);
+}
+
+// Function to solve polynomial equation
+function solvePolynomial(eq) {
+  try {
+    // Clean up the equation
+    let cleanEq = eq
+      .replace(/×/g, '*')
+      .replace(/÷/g, '/')
+      .replace(/\s/g, '')
+      .trim();
+
+    // Move everything to left side to get standard form
+    if (cleanEq.includes('=')) {
+      const [left, right] = cleanEq.split('=');
+      cleanEq = `${left}-(${right})=0`;
+    }
+
+    // Solve using nerdamer
+    const solution = nerdamer.solve(cleanEq, 'x');
+    
+    // Convert solution to readable format
+    return Array.from(solution).map(sol => {
+      const simplified = nerdamer(sol).text('decimals');
+      return simplified.includes('i') ? simplified : Number(simplified).toFixed(4);
+    });
+  } catch (error) {
+    console.error('Error solving polynomial:', error);
+    return null;
+  }
+}
+
+// Function to solve arithmetic expression
+function solveArithmetic(eq) {
+  try {
+    const cleanEq = eq
+      .replace(/×/g, '*')
+      .replace(/÷/g, '/')
+      .replace(/[^0-9+\-*/()=.\s]/g, '')
+      .trim();
+
+    if (!cleanEq) return null;
+
+    const result = math.evaluate(cleanEq);
+    return typeof result === 'number' ? result.toFixed(4) : result;
+  } catch (error) {
+    console.error('Error solving arithmetic:', error);
+    return null;
+  }
+}
+
+// Enhanced endpoint to solve equations
 app.post('/api/solve', upload.single('image'), async (req, res) => {
   try {
     // Ensure worker is initialized
@@ -56,28 +115,27 @@ app.post('/api/solve', upload.single('image'), async (req, res) => {
     // Solve each equation
     const solutions = equations.map(eq => {
       try {
-        const cleanEq = eq
-          .replace(/×/g, '*')
-          .replace(/÷/g, '/')
-          .replace(/[^0-9+\-*/()=.\s]/g, '')
-          .trim();
-
-        if (!cleanEq) {
+        if (isPolynomialEquation(eq)) {
+          const result = solvePolynomial(eq);
           return {
             equation: eq,
-            result: 'Invalid equation'
+            type: 'polynomial',
+            result: result || 'Could not solve',
+            solutions: Array.isArray(result) ? result.length : 0
+          };
+        } else {
+          const result = solveArithmetic(eq);
+          return {
+            equation: eq,
+            type: 'arithmetic',
+            result: result || 'Could not solve'
           };
         }
-
-        const result = math.evaluate(cleanEq);
-        return {
-          equation: eq,
-          result: typeof result === 'number' ? result.toFixed(2) : result
-        };
       } catch (error) {
         console.log('Error solving equation:', eq, error);
         return {
           equation: eq,
+          type: 'unknown',
           result: 'Could not solve'
         };
       }
