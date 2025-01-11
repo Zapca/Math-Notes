@@ -11,7 +11,7 @@ const DrawingCanvas = () => {
   const [lastY, setLastY] = useState(0);
   const [penSize, setPenSize] = useState(5);
   const [eraserSize, setEraserSize] = useState(20);
-  const [penColor, setPenColor] = useState('#A6BDCB');
+  const [penColor, setPenColor] = useState('#000F55');
   const [undoStack, setUndoStack] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
   const [showGrid, setShowGrid] = useState(false);
@@ -317,52 +317,54 @@ const DrawingCanvas = () => {
       </div>
 
       <div className="fixed right-4 top-1/2 transform -translate-y-1/2">
-        <div className="relative h-64 w-12 bg-gray-200 rounded-lg overflow-hidden">
-          <input
-            type="range"
-            min={tool === 'pen' ? "1" : "10"}
-            max={tool === 'pen' ? "20" : "50"}
-            value={tool === 'pen' ? penSize : eraserSize}
-            onChange={(e) => {
-              if (tool === 'pen') {
-                setPenSize(parseInt(e.target.value));
-              } else {
-                setEraserSize(parseInt(e.target.value));
-              }
-            }}
-            className="absolute w-64 h-12 -rotate-90 -translate-x-28 translate-y-28 appearance-none bg-transparent cursor-pointer outline-none"
-            style={{
-              WebkitAppearance: 'none',
-              MozAppearance: 'none',
-              '&::-webkit-slider-thumb': {
+        <div className="p-2 bg-white shadow-lg rounded-xl border-2 border-gray-300">
+          <div className="relative h-64 w-12 bg-gray-200 rounded-lg overflow-hidden">
+            <input
+              type="range"
+              min={tool === 'pen' ? "1" : "10"}
+              max={tool === 'pen' ? "20" : "50"}
+              value={tool === 'pen' ? penSize : eraserSize}
+              onChange={(e) => {
+                if (tool === 'pen') {
+                  setPenSize(parseInt(e.target.value));
+                } else {
+                  setEraserSize(parseInt(e.target.value));
+                }
+              }}
+              className="absolute w-64 h-12 -rotate-90 -translate-x-28 translate-y-28 appearance-none bg-transparent cursor-pointer outline-none"
+              style={{
                 WebkitAppearance: 'none',
-                appearance: 'none'
-              },
-              '&::-moz-range-thumb': {
-                appearance: 'none'
-              },
-              '&::-webkit-slider-runnable-track': {
-                background: 'transparent'
-              },
-              '&::-moz-range-track': {
-                background: 'transparent'
-              }
-            }}
-          />
-          <div 
-            className="absolute bottom-0 left-0 right-0 bg-gray-400"
-            style={{
-              height: `${((tool === 'pen' ? penSize : eraserSize) - (tool === 'pen' ? 1 : 10)) / 
-                      (tool === 'pen' ? 19 : 40) * 100}%`
-            }}
-          />
-          <div 
-            className="absolute w-12 h-6 bg-white rounded-sm shadow-md -translate-x-0 transform cursor-pointer pointer-events-none"
-            style={{
-              top: `calc(${100 - ((tool === 'pen' ? penSize : eraserSize) - (tool === 'pen' ? 1 : 10)) / 
-                    (tool === 'pen' ? 19 : 40) * 100}% - 12px)`
-            }}
-          />
+                MozAppearance: 'none',
+                '&::-webkit-slider-thumb': {
+                  WebkitAppearance: 'none',
+                  appearance: 'none'
+                },
+                '&::-moz-range-thumb': {
+                  appearance: 'none'
+                },
+                '&::-webkit-slider-runnable-track': {
+                  background: 'transparent'
+                },
+                '&::-moz-range-track': {
+                  background: 'transparent'
+                }
+              }}
+            />
+            <div 
+              className="absolute bottom-0 left-0 right-0 border bg-gray-400"
+              style={{
+                height: `${((tool === 'pen' ? penSize : eraserSize) - (tool === 'pen' ? 1 : 10)) / 
+                        (tool === 'pen' ? 19 : 40) * 100}%`
+              }}
+            />
+            <div 
+              className="absolute w-12 h-6 bg-white rounded-md shadow-md -translate-x-0 transform cursor-pointer pointer-events-none border border-gray-300"
+              style={{
+                top: `calc(${100 - ((tool === 'pen' ? penSize : eraserSize) - (tool === 'pen' ? 1 : 10)) / 
+                      (tool === 'pen' ? 19 : 40) * 100}% - 12px)`
+              }}
+            />
+          </div>
         </div>
       </div>
       
