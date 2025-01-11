@@ -17,6 +17,7 @@ const DrawingCanvas = () => {
   const [showGrid, setShowGrid] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [isSolving, setIsSolving] = useState(false);
+  const [result, setResult] = useState('');
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -142,6 +143,7 @@ const DrawingCanvas = () => {
   const solveEquations = async () => {
     try {
       setIsSolving(true);
+      setResult(''); // Clear previous result
       const canvas = canvasRef.current;
       
       // Convert canvas to base64
@@ -165,23 +167,7 @@ const DrawingCanvas = () => {
       
       // Display result from Gemini
       if (data.result) {
-        const ctx = canvasRef.current.getContext('2d');
-        ctx.font = '16px Arial';
-        ctx.fillStyle = '#4CAF50';
-        
-        // Save current canvas state
-        ctx.save();
-        
-        // Write the result in the bottom right
-        ctx.fillText(
-          data.result,
-          canvas.width - 200,
-          canvas.height - 30
-        );
-        
-        // Restore canvas state
-        ctx.restore();
-        saveToUndoStack();
+        setResult(data.result); // Set new result
       } else {
         alert('No solution provided. Please try again.');
       }
@@ -308,6 +294,13 @@ const DrawingCanvas = () => {
         </div>
       </div>
 
+      {/* Add Results Display */}
+      <div className="fixed top-20 right-4 p-4 bg-white rounded-lg shadow-lg max-w-xs">
+        {result && (
+          <p className="text-sm text-gray-800">{result}</p>
+        )}
+      </div>
+
       {/* Side controls */}
       <div className="fixed left-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-4 bg-white p-4 rounded-lg shadow-lg">
         <button
@@ -323,30 +316,54 @@ const DrawingCanvas = () => {
         )}
       </div>
 
-      <div className="fixed right-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-4 bg-white p-4 rounded-lg shadow-lg">
-        {tool === 'pen' ? (
+      <div className="fixed right-4 top-1/2 transform -translate-y-1/2">
+        <div className="relative h-64 w-12 bg-gray-200 rounded-lg overflow-hidden">
           <input
             type="range"
-            min="1"
-            max="20"
-            value={penSize}
-            onChange={(e) => setPenSize(parseInt(e.target.value))}
-            className="h-32"
-            style={{ writingMode: 'bt-lr', transform: 'rotate(270deg)' }}
-            title="Pen Size"
+            min={tool === 'pen' ? "1" : "10"}
+            max={tool === 'pen' ? "20" : "50"}
+            value={tool === 'pen' ? penSize : eraserSize}
+            onChange={(e) => {
+              if (tool === 'pen') {
+                setPenSize(parseInt(e.target.value));
+              } else {
+                setEraserSize(parseInt(e.target.value));
+              }
+            }}
+            className="absolute w-64 h-12 -rotate-90 -translate-x-28 translate-y-28 appearance-none bg-transparent cursor-pointer outline-none"
+            style={{
+              WebkitAppearance: 'none',
+              MozAppearance: 'none',
+              '&::-webkit-slider-thumb': {
+                WebkitAppearance: 'none',
+                appearance: 'none'
+              },
+              '&::-moz-range-thumb': {
+                appearance: 'none'
+              },
+              '&::-webkit-slider-runnable-track': {
+                background: 'transparent'
+              },
+              '&::-moz-range-track': {
+                background: 'transparent'
+              }
+            }}
           />
-        ) : (
-          <input
-            type="range"
-            min="10"
-            max="50"
-            value={eraserSize}
-            onChange={(e) => setEraserSize(parseInt(e.target.value))}
-            className="h-32"
-            style={{ writingMode: 'bt-lr', transform: 'rotate(270deg)' }}
-            title="Eraser Size"
+          <div 
+            className="absolute bottom-0 left-0 right-0 bg-gray-400"
+            style={{
+              height: `${((tool === 'pen' ? penSize : eraserSize) - (tool === 'pen' ? 1 : 10)) / 
+                      (tool === 'pen' ? 19 : 40) * 100}%`
+            }}
           />
-        )}
+          <div 
+            className="absolute w-12 h-6 bg-white rounded-sm shadow-md -translate-x-0 transform cursor-pointer pointer-events-none"
+            style={{
+              top: `calc(${100 - ((tool === 'pen' ? penSize : eraserSize) - (tool === 'pen' ? 1 : 10)) / 
+                    (tool === 'pen' ? 19 : 40) * 100}% - 12px)`
+            }}
+          />
+        </div>
       </div>
       
       <canvas
