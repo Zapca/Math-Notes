@@ -144,26 +144,27 @@ const DrawingCanvas = () => {
       setIsSolving(true);
       const canvas = canvasRef.current;
       
-      // Convert canvas to blob
-      const blob = await new Promise(resolve => {
-        canvas.toBlob(resolve, 'image/png');
-      });
-      
-      const formData = new FormData();
-      formData.append('image', blob, 'equation.png'); // Add filename
-
+      // Convert canvas to base64
+      const base64Image = canvas.toDataURL('image/png').split(',')[1];
+  
       const response = await fetch('http://localhost:3001/api/solve', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image: base64Image
+        }),
       });
-
+  
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
+  
       const data = await response.json();
       
-      if (data.solutions && data.solutions.length > 0) {
+      // Display result from Gemini
+      if (data.result) {
         const ctx = canvasRef.current.getContext('2d');
         ctx.font = '16px Arial';
         ctx.fillStyle = '#4CAF50';
@@ -171,20 +172,18 @@ const DrawingCanvas = () => {
         // Save current canvas state
         ctx.save();
         
-        data.solutions.forEach((solution, index) => {
-          const text = `= ${solution.result}`;
-          ctx.fillText(
-            text,
-            canvas.width - 150,
-            (index + 1) * 30
-          );
-        });
+        // Write the result in the bottom right
+        ctx.fillText(
+          data.result,
+          canvas.width - 200,
+          canvas.height - 30
+        );
         
         // Restore canvas state
         ctx.restore();
         saveToUndoStack();
       } else {
-        alert('No equations were detected. Please write more clearly or try again.');
+        alert('No solution provided. Please try again.');
       }
     } catch (error) {
       console.error('Error solving equations:', error);
