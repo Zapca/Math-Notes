@@ -1,6 +1,5 @@
 # Math Notes
 
-![Math Notes Banner](https://img.shields.io/badge/Math%20Notes-Interactive%20Mathematical%20Equations%20Solver-blue)
 
 ## 📝 Overview
 
