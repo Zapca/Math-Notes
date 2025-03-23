@@ -109,7 +109,7 @@ Math Notes is an interactive web application that allows users to draw and solve
 
 ## 📄 License
 
-This project is released under the MIT License. See the LICENSE file for details.
+This project is licensed under the GNU GENERAL PUBLIC LICENSE - see the LICENSE file for details.
 
 ## 🤝 Contributing
 
